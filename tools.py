@@ -121,25 +121,40 @@ def get_api_param():
 
     def format_param(context):
         param = []
+        sub_flag = False
         for line in context.split(','):
-            k, v = line.split(':')
+            k = line.split(':')[0]
+            v = line.split(':')[1]
+            if k=='umpChannel':
+                param.append('"{}":{}'.format(k, 10001))
+                continue
+            if k=='subChannel':
+                # param.append('"{}":{}'.format(k, 'damai@damaih5_h5'))
+                sub_flag = True
+                continue
+
             param.append('"{}":{}'.format(k, v))
         param = json.loads('{' + ','.join(param) + '}')
+        if sub_flag:
+            param['subChannel'] = "damai@damaih5_h5"
         return param
 
-    js_code_define = requests.get(
+    js_code_define_com = requests.get(
         "https://g.alicdn.com/damai/??/vue-pc/0.0.70/vendor.js,vue-pc/0.0.70/perform/perform.js").text
+    js_code_define = requests.get("https://g.alicdn.com/damai/damai-msite/3.21.49/detail/item.js").text
     # 获取商品SKU的API参数
-    commodity_param = re.search('getSkuData:function.*?\|\|""}}', js_code_define).group()
+
+    commodity_param = re.search('getSkuData:function.*?\|\|""}}', js_code_define_com).group()
     commodity_param = re.search('data:{.*?\|\|""}}', commodity_param).group()
     commodity_param = commodity_param.replace('data:{', ''). \
         replace('this.vmSkuData.privilegeId||""}}', '""'). \
         replace('itemId:e', 'itemId:""')
     commodity_param = format_param(commodity_param)
+    # commodity_param = {}
     # 获取订单购买用户的API参数
-    ex_params = re.search(',i=Z}else{.*?;e&&', js_code_define).group()
+    ex_params = re.search('>7002e3\}.*?;e.quickBuy', js_code_define).group()
     ex_params = re.search('{.*}', ex_params).group()
-    ex_params = ex_params.replace('{var u=', '')[1:-1]
+    ex_params = ex_params.replace('{var r=', '')[1:-1]
     ex_params = format_param(ex_params)
     return commodity_param, ex_params
 
